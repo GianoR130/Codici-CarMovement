@@ -1,35 +1,57 @@
 using UnityEngine;
 
-public class PlayerMovement : MonoBehaviour
+public class CarMovement : MonoBehaviour
 {
-    public float acceleration = 2f; // Acceleration rate
-    public float maxSpeed = 10f;    // Maximum speed
-    public float deceleration = 5f; // Deceleration when no input
+    public float maxSpeedForward = 10f;
+    public float maxSpeedReverse = 5f;
+    public float acceleration = 8f;
+    public float deceleration = 12f;
+    public float turnSpeed = 100f; // gradi al secondo
+    public float brakeDeceleration = 20f;
 
-    private float speed = 0f;       // Current speed
+    private float currentSpeed = 0f;
+    private float horizontalInput = 0f;
+    private float verticalInput = 0f;
 
     void Update()
     {
-        // Check for input and handle acceleration
-        if (Input.GetKey("w"))
+        // Input
+        horizontalInput = Input.GetAxis("Horizontal"); // A/D
+        verticalInput = Input.GetAxis("Vertical");     // W/S
+
+        // Accelerazione / decelerazione
+        if (verticalInput > 0) // avanti
         {
-            // Accelerate
-            speed += acceleration * Time.deltaTime;
-            speed = Mathf.Clamp(speed, 0, maxSpeed); // Limit speed to maxSpeed
+            currentSpeed += acceleration * Time.deltaTime;
+            if (currentSpeed > maxSpeedForward)
+                currentSpeed = maxSpeedForward;
         }
-        else
+        else if (verticalInput < 0) // retromarcia
         {
-            // Decelerate when no input
-            speed = Mathf.MoveTowards(speed, 0, deceleration * Time.deltaTime);
+            currentSpeed -= acceleration * Time.deltaTime;
+            if (currentSpeed < -maxSpeedReverse)
+                currentSpeed = -maxSpeedReverse;
+        }
+        else // nessun input avanti/indietro
+        {
+            if (currentSpeed > 0)
+                currentSpeed -= deceleration * Time.deltaTime;
+            else if (currentSpeed < 0)
+                currentSpeed += deceleration * Time.deltaTime;
+
+            // blocca la macchina se molto lenta
+            if (Mathf.Abs(currentSpeed) < 0.05f)
+                currentSpeed = 0f;
         }
 
-        // Handle movement direction
-        float x = Input.GetAxisRaw("Horizontal");
-        float z = Input.GetAxisRaw("Vertical");
+        // Rotazione solo se la macchina si muove
+        if (Mathf.Abs(currentSpeed) > 0.1f)
+        {
+            float turn = horizontalInput * turnSpeed * Time.deltaTime * (currentSpeed / maxSpeedForward);
+            transform.Rotate(0, turn, 0);
+        }
 
-        Vector3 direction = new Vector3(x, 0, z).normalized;
-
-        // Move the cube with the current speed
-        transform.Translate(direction * speed * Time.deltaTime, Space.World);
+        // Movimento in avanti nella direzione corrente
+        transform.Translate(Vector3.forward * currentSpeed * Time.deltaTime);
     }
 }
