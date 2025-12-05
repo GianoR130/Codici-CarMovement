@@ -1,5 +1,7 @@
 using UnityEngine;
+using TMPro; // importante
 
+[RequireComponent(typeof(Rigidbody))]
 public class CarMovement : MonoBehaviour
 {
     public float maxSpeedForward = 10f;
@@ -7,11 +9,19 @@ public class CarMovement : MonoBehaviour
     public float acceleration = 8f;
     public float deceleration = 12f;
     public float turnSpeed = 100f; // gradi al secondo
-    public float brakeDeceleration = 20f;
 
     private float currentSpeed = 0f;
     private float horizontalInput = 0f;
     private float verticalInput = 0f;
+    private Rigidbody rb;
+    public TMP_Text inputDisplay; // assegnalo nell'Inspector
+
+    void Start()
+    {
+        rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true; // evita rotazioni indesiderate
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous; // evita passaggio attraverso muri
+    }
 
     void Update()
     {
@@ -32,14 +42,13 @@ public class CarMovement : MonoBehaviour
             if (currentSpeed < -maxSpeedReverse)
                 currentSpeed = -maxSpeedReverse;
         }
-        else // nessun input avanti/indietro
+        else // nessun input
         {
             if (currentSpeed > 0)
                 currentSpeed -= deceleration * Time.deltaTime;
             else if (currentSpeed < 0)
                 currentSpeed += deceleration * Time.deltaTime;
 
-            // blocca la macchina se molto lenta
             if (Mathf.Abs(currentSpeed) < 0.05f)
                 currentSpeed = 0f;
         }
@@ -50,8 +59,17 @@ public class CarMovement : MonoBehaviour
             float turn = horizontalInput * turnSpeed * Time.deltaTime * (currentSpeed / maxSpeedForward);
             transform.Rotate(0, turn, 0);
         }
+        if (inputDisplay != null)
+        {
+            inputDisplay.text = "Horizontal: " + horizontalInput.ToString("F2") +
+                                "\nVertical: " + verticalInput.ToString("F2") +
+                                "\nSpeed: " + currentSpeed.ToString("F2");
+        }
+    }
 
-        // Movimento in avanti nella direzione corrente
-        transform.Translate(Vector3.forward * currentSpeed * Time.deltaTime);
+    void FixedUpdate()
+    {
+        // Movimento con velocity invece di MovePosition
+        rb.linearVelocity = transform.forward * currentSpeed;
     }
 }
